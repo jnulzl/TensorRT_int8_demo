@@ -154,4 +154,4 @@ all_imgs :  (48, 3, 640, 640)
 
 - **如果你用的CUDA, OpenCV, TensorRT或者cudnn与上述描述的不一致可能存在细微的api差异，可在此基础上稍微修改即可**。
 
-- [YOLOv6-TensorRT in C++](https://github.com/meituan/YOLOv6/tree/main/deploy/TensorRT)与本仓库类似，也可以参考。
+- **[YOLOv6-TensorRT in C++](https://github.com/meituan/YOLOv6/tree/main/deploy/TensorRT)与本仓库类似，也可以参考**。
