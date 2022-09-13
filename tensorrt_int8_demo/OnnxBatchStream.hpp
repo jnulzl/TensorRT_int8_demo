@@ -154,7 +154,12 @@ private:
     int mImageW;
 };
 
+#if NV_TENSORRT_MAJOR > 8
 using samplesCommon::SampleUniquePtr;
+#else
+template <typename T>
+using SampleUniquePtr = std::unique_ptr<T, samplesCommon::InferDeleter>;
+#endif
 
 //! \brief  The SampleINT8 class implements the INT8 sample
 //!
@@ -307,6 +312,7 @@ bool SampleINT8::constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& builder,
         }
     }
 
+#if NV_TENSORRT_MAJOR > 8
     // CUDA stream used for profiling by the builder.
     auto profileStream = samplesCommon::makeCudaStream();
     if (!profileStream)
@@ -333,7 +339,14 @@ bool SampleINT8::constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& builder,
     {
         return false;
     }
-
+#else
+    mEngine = std::shared_ptr<nvinfer1::ICudaEngine>(
+            builder->buildEngineWithConfig(*network, *config), samplesCommon::InferDeleter());
+    if (!mEngine)
+    {
+        return false;
+    }
+#endif
     /************************save engine file to disk***********************/
     std::ofstream engineFile(mParams.engine_file_save_path, std::ios::binary);
     if (!engineFile)

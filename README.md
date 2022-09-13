@@ -4,13 +4,13 @@
 
 ## 开发环境
 
-- Ubuntu 18.04
+- Ubuntu 16.04 + 
 
 - CUDA 11.x
 
-- TensorRT 8.x
+- TensorRT 7.x / TensorRT 7.x
 
-- cudnn  8.x
+- cudnn 8.x
 
 - OpenCV 3.x
 

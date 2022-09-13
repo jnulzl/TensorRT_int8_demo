@@ -405,9 +405,11 @@ bool CModule_yolov5_tensorrt_impl::constructNetwork(TRTUniquePtr<nvinfer1::IBuil
         {
             config->setFlag(nvinfer1::BuilderFlag::kINT8);
         }
-
-//        samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f);
+#if NV_TENSORRT_MAJOR > 8
         samplesCommon::setAllDynamicRanges(network.get(), 127.0f, 127.0f);
+#else
+        samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f);
+#endif
     }
 
     samplesCommon::enableDLA(builder.get(), config.get(), config_.dlaCore);

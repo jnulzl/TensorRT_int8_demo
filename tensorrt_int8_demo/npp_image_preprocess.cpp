@@ -30,6 +30,13 @@ namespace fs = ghc::filesystem;
 #include "NvInfer.h"
 #include "common.h"
 
+#if NV_TENSORRT_MAJOR > 8
+using samplesCommon::SampleUniquePtr;
+#else
+template <typename T>
+using SampleUniquePtr = std::unique_ptr<T, samplesCommon::InferDeleter>;
+#endif
+
 std::vector<std::string> split(const std::string& string, char separator, bool ignore_empty)
 {
     std::vector<std::string> pieces;
@@ -56,7 +63,7 @@ std::string trim(const std::string& str) {
 
 bool is_support_int8()
 {
-    auto builder = samplesCommon::SampleUniquePtr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(sample::gLogger.getTRTLogger()));
+    auto builder = SampleUniquePtr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(sample::gLogger.getTRTLogger()));
     if (!builder)
     {
         return false;
