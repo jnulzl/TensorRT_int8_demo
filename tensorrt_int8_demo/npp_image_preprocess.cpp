@@ -22,13 +22,13 @@
 namespace fs = ghc::filesystem;
 #endif
 
+#include "json.hpp"
 #include "npp.h"
 #include "npp_image_preprocess.h"
 
 #include "logger.h"
 #include "NvInfer.h"
 #include "common.h"
-
 
 std::vector<std::string> split(const std::string& string, char separator, bool ignore_empty)
 {
@@ -74,6 +74,53 @@ bool is_support_int8()
     }
 }
 
+bool set_quant_params(const std::string& config_json_path, SampleINT8Params& params)
+{
+    std::ifstream input_file(config_json_path);
+    nlohmann::json json_file;
+    input_file >> json_file;
+
+    params.onnxFilePath = json_file["onnxFilePath"];
+    std::string save_prefix = params.onnxFilePath.substr(0,params.onnxFilePath.size() - 5) + std::string("_int8.trt");
+    params.engine_file_save_path = json_file.contains("engine_file_save_path") ?
+                                   json_file["engine_file_save_path"] : save_prefix.c_str();
+    params.preprocessed_binary_file_path = json_file.contains("preprocessed_binary_file_path") ? json_file["preprocessed_binary_file_path"]:"";
+    params.img_list_file = json_file.contains("img_list_file") ? json_file["img_list_file"]:"";
+    params.batchSize = json_file.contains("maxInferenceBatchSize") ? static_cast<int>(json_file["maxInferenceBatchSize"]) : 4;
+    params.imageChannels = json_file.contains("netInputChannels") ? static_cast<int>(json_file["netInputChannels"]) : 3;
+    params.imageHeight = static_cast<int>(json_file["netInputHeight"]);
+    params.imageWidth = static_cast<int>(json_file["netInputWidth"]);
+    params.calBatchSize = json_file.contains("calBatchSize") ? static_cast<int>(json_file["calBatchSize"]) : 32;
+    params.numImages = get_image_num(params);
+    params.nbCalBatches = params.numImages / params.calBatchSize;
+    auto inputs = json_file["input"].get<std::vector<std::string>>();
+    for (const auto& item:inputs)
+    {
+        params.inputTensorNames.emplace_back(item);
+    }
+    auto outputs = json_file["output"].get<std::vector<std::string>>();
+    for (const auto& item:outputs)
+    {
+        params.outputTensorNames.emplace_back(item);
+    }
+    params.networkName = json_file.contains("networkName") ? json_file["networkName"]:"model_int8";
+    std::vector<float> means_tmp = json_file["means"].get<std::vector<float>>();
+    for (int idx = 0; idx < means_tmp.size(); ++idx)
+    {
+        params.means[idx] = means_tmp[idx];
+    }
+    std::vector<float> scales_tmp = json_file["scales"].get<std::vector<float>>();
+    for (int idx = 0; idx < scales_tmp.size(); ++idx)
+    {
+        params.scales[idx] = scales_tmp[idx];
+    }
+    params.isFixResize   = 0 != static_cast<int>(json_file["isFixResize"]);
+    params.isSymmetryPad = 0 != static_cast<int>(json_file["isSymmetryPad"]);
+    params.isBGR2RGB     = 0 != static_cast<int>(json_file["isBGR2RGB"]);
+    params.isHWC2CHW     = 0 != static_cast<int>(json_file["isHWC2CHW"]);
+    params.dlaCore = json_file.contains("dlaCore") ? static_cast<int>(json_file["dlaCore"]) : -1;;
+    params.is_save_jpg_after_bgr2rgb     = 0 != static_cast<int>(json_file["is_save_jpg_after_bgr2rgb"]);
+}
 void process_color_image(const SampleINT8Params& params, float* preprocess_data)
 {
     size_t src_pixel_num_pre = 0;

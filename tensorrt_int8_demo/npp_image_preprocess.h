@@ -34,8 +34,9 @@ struct SampleINT8Params : public samplesCommon::OnnxSampleParams
     bool is_save_jpg_after_bgr2rgb;               //!< If save image when convert bgr(rgb) to rgb(bgr)
 };
 
-
 bool is_support_int8();
+
+bool set_quant_params(const std::string& config_json_path, SampleINT8Params& params);
 
 void preprocess_func(const SampleINT8Params& params, std::vector<float>& net_input_preprocessed_data);
 
