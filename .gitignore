@@ -5,4 +5,4 @@ build*
 cmake-build*
 models/yolov5/face/face*trt
 tensorrt_int8_demo/npp_demo.cpp
-
+third_party
