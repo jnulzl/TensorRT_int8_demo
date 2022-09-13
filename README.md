@@ -8,7 +8,7 @@
 
 - CUDA 11.x
 
-- TensorRT 7.x / TensorRT 7.x
+- TensorRT 7.x / TensorRT 8.x
 
 - cudnn 8.x
 
