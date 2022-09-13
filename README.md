@@ -20,8 +20,11 @@
 
 ```shell
 # build onnx2trtInt8 
->>mkdir build && cd build
+>>mkdir -p third_party/Linux && cd third_party/Linux
+>>ln -s "YOUR_CUDNN_HOME" cudnn
+>>ln -s "YOUR_TENSORRT_HOME" TensorRT
 >>export PATH="YOUR_CUDA_HOME"/bin:$PATH
+>>mkdir build && cd build
 >>cmake —DCMAKE_BUILD_TYPE=Release -DCUDA_HOME="YOUR_CUDA_HOME" -DCUDNN_HOME="YOUR_CUDNN_HOME" -DTRT_HOME="YOUR_TENSORRT_HOME" -DOpenCV_DIR="YOUR_OPENCV_DIR" ..
 >>make VERBOSE=1 -j8 
 >>
