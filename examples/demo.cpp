@@ -88,7 +88,6 @@ int main(int argc, char* argv[])
         {
             break;
         }
-        //frame = cv::imread(std::string(PROJECT_ROOT) + "/data/Joe_Biden_presidential_portrait.jpg");
         cv::Mat img_origin = frame.clone();
         cv::Mat img_show = frame.clone();
 
