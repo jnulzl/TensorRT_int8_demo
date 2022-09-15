@@ -2,6 +2,10 @@
 
 `本仓库以yolov5为例记录了TensorRT int8使用方法，主要包括：`模型int8量化`和`int8模型推理部署`两部分，详细见下面`
 
+## 更新说明
+
+- 2022.09.15 : add `npp_demo` in `npp_demo` directory and also reference to : [NVIDIA_NPP_DEMO](https://github.com/jnulzl/NVIDIA_NPP_DEMO)
+
 ## 开发环境
 
 - Ubuntu 16.04 + 

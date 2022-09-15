@@ -102,6 +102,7 @@ include_directories(${INCLUDE_PATH})
 link_directories(${LIB_PATH})
 
 add_subdirectory(tensorrt_int8_demo)
+add_subdirectory(npp_demo)
 
 add_subdirectory(src)
 add_subdirectory(examples)
