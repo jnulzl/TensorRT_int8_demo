@@ -33,7 +33,7 @@ int main(int argc, char** argv)
     {
         if (!sample.build(dataTypes[i]))
         {
-#if NV_TENSORRT_MAJOR > 8
+#if NV_TENSORRT_MAJOR >= 8
             if (!samplesCommon::isDataTypeSupported(dataTypes[i]))
 #else
             if (!is_support_int8())

@@ -154,7 +154,7 @@ private:
     int mImageW;
 };
 
-#if NV_TENSORRT_MAJOR > 8
+#if NV_TENSORRT_MAJOR >= 8
 using samplesCommon::SampleUniquePtr;
 #else
 template <typename T>
@@ -312,7 +312,7 @@ bool SampleINT8::constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& builder,
         }
     }
 
-#if NV_TENSORRT_MAJOR > 8
+#if NV_TENSORRT_MAJOR >= 8
     // CUDA stream used for profiling by the builder.
     auto profileStream = samplesCommon::makeCudaStream();
     if (!profileStream)

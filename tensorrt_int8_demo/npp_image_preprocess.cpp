@@ -30,7 +30,7 @@ namespace fs = ghc::filesystem;
 #include "NvInfer.h"
 #include "common.h"
 
-#if NV_TENSORRT_MAJOR > 8
+#if NV_TENSORRT_MAJOR >= 8
 using samplesCommon::SampleUniquePtr;
 #else
 template <typename T>
@@ -231,7 +231,7 @@ void process_color_image(const SampleINT8Params& params, float* preprocess_data)
             img_after_warpAffine_data.resize(dst_pixel_num);
             CUDACHECK(cudaMemcpy(img_after_warpAffine_data.data(), dst_ptr_d,
                                  sizeof(Npp8u) * dst_pixel_num, cudaMemcpyDeviceToHost));
-            cv::Mat img_after_warpAffine = cv::Mat(params.imageHeight, params.imageHeight, CV_8UC3,
+            cv::Mat img_after_warpAffine = cv::Mat(params.imageHeight, params.imageWidth, CV_8UC3,
                                                    img_after_warpAffine_data.data());
             cv::imwrite("img_after_warpAffine_count" + std::to_string(img_count) + ".jpg", img_after_warpAffine);
         }
@@ -251,7 +251,7 @@ void process_color_image(const SampleINT8Params& params, float* preprocess_data)
                 img_after_bgr2rgb_data.resize(dst_pixel_num);
                 CUDACHECK(cudaMemcpy(img_after_bgr2rgb_data.data(), dst_ptr_d,
                                      sizeof(Npp8u) * dst_pixel_num, cudaMemcpyDeviceToHost));
-                cv::Mat img_after_bgr2rgb = cv::Mat(params.imageHeight, params.imageHeight, CV_8UC3, img_after_bgr2rgb_data.data());
+                cv::Mat img_after_bgr2rgb = cv::Mat(params.imageHeight, params.imageWidth, CV_8UC3, img_after_bgr2rgb_data.data());
                 cv::imwrite("img_after_bgr2rgb_count" + std::to_string(img_count) + ".jpg", img_after_bgr2rgb);
             }
         }
@@ -405,7 +405,7 @@ void process_gray_image(const SampleINT8Params& params, float* preprocess_data)
             img_after_warpAffine_data.resize(dst_pixel_num);
             CUDACHECK(cudaMemcpy(img_after_warpAffine_data.data(), dst_ptr_d,
                                  sizeof(Npp8u) * dst_pixel_num, cudaMemcpyDeviceToHost));
-            cv::Mat img_after_warpAffine = cv::Mat(params.imageHeight, params.imageHeight, CV_8UC1,
+            cv::Mat img_after_warpAffine = cv::Mat(params.imageHeight, params.imageWidth, CV_8UC1,
                                                    img_after_warpAffine_data.data());
             cv::imwrite("img_after_warpAffine_count" + std::to_string(img_count) + ".jpg", img_after_warpAffine);
         }
