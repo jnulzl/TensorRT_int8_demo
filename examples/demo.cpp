@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
             cv::putText(img_show, std::to_string(label), cv::Point(xmin, ymin), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 0, 255), 2);
             cv::putText(img_show, std::to_string(score), cv::Point(xmax, ymin), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(0, 255, 255), 2);
         }
-        cv::imwrite(std::to_string(frame_id) + ".jpg",img_show);
+        cv::imwrite("res/" + std::to_string(frame_id) + ".jpg",img_show);
         if(frame_id > 20)
             break;
         frame_id++;

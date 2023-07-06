@@ -76,7 +76,7 @@ void CModule_yolov5_tensorrt_impl::engine_init()
             std::cerr << "Error loading engine file: " << engine_file_path << std::endl;
         }
 
-        TRTUniquePtr<nvinfer1::IRuntime> runtime{createInferRuntime(sample::gLogger.getTRTLogger())};
+        TRTUniquePtr<nvinfer1::IRuntime> runtime{nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger())};
         if (config_.dlaCore != -1)
         {
             runtime->setDLACore(config_.dlaCore);
@@ -391,17 +391,17 @@ bool CModule_yolov5_tensorrt_impl::constructNetwork(TRTUniquePtr<nvinfer1::IBuil
     }
 
     builder->setMaxBatchSize(config_.batch_size);
-    config->setMaxWorkspaceSize(2_GiB);
+//    config->setMaxWorkspaceSize(2_GiB);
     if (config_.fp16)
     {
-        if(isSupported(DataType::kHALF))
+        if(isSupported(nvinfer1::DataType::kHALF))
         {
             config->setFlag(nvinfer1::BuilderFlag::kFP16);
         }
     }
     if (config_.int8)
     {
-        if(isSupported(DataType::kINT8))
+        if(isSupported(nvinfer1::DataType::kINT8))
         {
             config->setFlag(nvinfer1::BuilderFlag::kINT8);
         }
@@ -417,7 +417,7 @@ bool CModule_yolov5_tensorrt_impl::constructNetwork(TRTUniquePtr<nvinfer1::IBuil
     return true;
 }
 
-bool CModule_yolov5_tensorrt_impl::isSupported(DataType dataType)
+bool CModule_yolov5_tensorrt_impl::isSupported(nvinfer1::DataType dataType)
 {
     auto builder = TRTUniquePtr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(sample::gLogger.getTRTLogger()));
     if (!builder)
@@ -425,8 +425,8 @@ bool CModule_yolov5_tensorrt_impl::isSupported(DataType dataType)
         return false;
     }
 
-    if ((dataType == DataType::kINT8 && !builder->platformHasFastInt8())
-    || (dataType == DataType::kHALF && !builder->platformHasFastFp16()))
+    if ((dataType == nvinfer1::DataType::kINT8 && !builder->platformHasFastInt8())
+    || (dataType == nvinfer1::DataType::kHALF && !builder->platformHasFastFp16()))
     {
         return false;
     }

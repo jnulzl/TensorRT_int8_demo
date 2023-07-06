@@ -4,6 +4,10 @@
 //! This file contains the implementation of the sample. It creates the network using
 //! the onnx model.
 
+//// Define TRT entrypoints used in common code
+#define DEFINE_TRT_ENTRYPOINTS 1
+//#define DEFINE_TRT_LEGACY_PARSER_ENTRYPOINT 0
+
 #include "OnnxBatchStream.hpp"
 #include "npp_image_preprocess.h"
 
@@ -28,7 +32,7 @@ int main(int argc, char** argv)
     sample::gLogInfo << "Building and running a GPU inference engine for INT8 sample" << std::endl;
 
     std::vector<std::string> dataTypeNames = {"INT8"};
-    std::vector<DataType> dataTypes = {DataType::kINT8};
+    std::vector<nvinfer1::DataType> dataTypes = {nvinfer1::DataType::kINT8};
     for (size_t i = 0; i < dataTypes.size(); i++)
     {
         if (!sample.build(dataTypes[i]))

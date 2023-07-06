@@ -125,8 +125,9 @@ bool set_quant_params(const std::string& config_json_path, SampleINT8Params& par
     params.isSymmetryPad = 0 != static_cast<int>(json_file["isSymmetryPad"]);
     params.isBGR2RGB     = 0 != static_cast<int>(json_file["isBGR2RGB"]);
     params.isHWC2CHW     = 0 != static_cast<int>(json_file["isHWC2CHW"]);
-    params.dlaCore = json_file.contains("dlaCore") ? static_cast<int>(json_file["dlaCore"]) : -1;;
+    params.dlaCore = json_file.contains("dlaCore") ? static_cast<int>(json_file["dlaCore"]) : -1;
     params.is_save_jpg_after_bgr2rgb     = 0 != static_cast<int>(json_file["is_save_jpg_after_bgr2rgb"]);
+    return true;
 }
 void process_color_image(const SampleINT8Params& params, float* preprocess_data)
 {

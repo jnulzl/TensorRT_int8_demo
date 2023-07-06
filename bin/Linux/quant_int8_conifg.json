@@ -30,5 +30,5 @@
   "isBGR2RGB": 1,
   "isHWC2CHW": 1,
   "dlaCore" : -1,
-  "is_save_jpg_after_bgr2rgb": false
+  "is_save_jpg_after_bgr2rgb": 0
 }

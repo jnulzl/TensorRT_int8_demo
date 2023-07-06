@@ -35,7 +35,7 @@ if("Linux" STREQUAL ${CMAKE_SYSTEM_NAME})
     #    set(CMAKE_SKIP_BUILD_RPATH ON)
 
     if(NOT CUDA_HOME)
-        set(CUDA_HOME /usr/local/cuda)
+        set(CUDA_HOME /usr/local/cuda-11.7)
     endif()
     message(STATUS "CUDA_HOME : " ${CUDA_HOME})
 

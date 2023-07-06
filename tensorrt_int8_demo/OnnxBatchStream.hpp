@@ -130,7 +130,7 @@ public:
 
     nvinfer1::Dims getDims() const override
     {
-        return Dims{4, {mBatchSize, mDims.d[0], mDims.d[1], mDims.d[2]}};
+        return nvinfer1::Dims{4, {mBatchSize, mDims.d[0], mDims.d[1], mDims.d[2]}};
     }
 
 private:
@@ -145,7 +145,7 @@ private:
     int mBatchSize{0};
     int mBatchCount{0}; //!< The batch that will be read on the next invocation of next()
     int mMaxBatches{0};
-    Dims mDims{};
+    nvinfer1::Dims mDims{};
     std::vector<float> mData{};
     std::vector<float> mLabels{};
     int mNumImages;
@@ -178,7 +178,7 @@ public:
     //!
     //! \brief Function builds the network engine
     //!
-    bool build(DataType dataType);
+    bool build(nvinfer1::DataType dataType);
 
 private:
     SampleINT8Params mParams; //!< The parameters for the sample.
@@ -192,7 +192,7 @@ private:
     //!
     bool constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& builder,
                           SampleUniquePtr<nvinfer1::INetworkDefinition>& network, SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
-                          SampleUniquePtr<nvonnxparser::IParser>& parser, DataType dataType);
+                          SampleUniquePtr<nvonnxparser::IParser>& parser, nvinfer1::DataType dataType);
 };
 
 //!
@@ -203,7 +203,7 @@ private:
 //!
 //! \return true if the engine was created successfully and false otherwise
 //!
-bool SampleINT8::build(DataType dataType)
+bool SampleINT8::build(nvinfer1::DataType dataType)
 {
 
     auto builder = SampleUniquePtr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(sample::gLogger.getTRTLogger()));
@@ -212,8 +212,8 @@ bool SampleINT8::build(DataType dataType)
         return false;
     }
 
-    if ((dataType == DataType::kINT8 && !builder->platformHasFastInt8())
-        || (dataType == DataType::kHALF && !builder->platformHasFastFp16()))
+    if ((dataType == nvinfer1::DataType::kINT8 && !builder->platformHasFastInt8())
+        || (dataType == nvinfer1::DataType::kHALF && !builder->platformHasFastFp16()))
     {
         return false;
     }
@@ -260,7 +260,7 @@ bool SampleINT8::build(DataType dataType)
 //!
 bool SampleINT8::constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& builder,
                                   SampleUniquePtr<nvinfer1::INetworkDefinition>& network, SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
-                                  SampleUniquePtr<nvonnxparser::IParser>& parser, DataType dataType)
+                                  SampleUniquePtr<nvonnxparser::IParser>& parser, nvinfer1::DataType dataType)
 {
     mEngine = nullptr;
     auto parsed = parser->parseFromFile(mParams.onnxFilePath.c_str(),
@@ -276,27 +276,27 @@ bool SampleINT8::constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& builder,
 //    }
 
     // Calibrator life time needs to last until after the engine is built.
-    std::unique_ptr<IInt8Calibrator> calibrator;
+    std::unique_ptr<nvinfer1::IInt8Calibrator> calibrator;
 
     config->setAvgTimingIterations(1);
     config->setMinTimingIterations(1);
-    config->setMaxWorkspaceSize(2_GiB);
-    config->setFlag(BuilderFlag::kDEBUG);
-    if (dataType == DataType::kHALF)
+//    config->setMaxWorkspaceSize(2_GiB);
+    config->setFlag(nvinfer1::BuilderFlag::kDEBUG);
+    if (dataType == nvinfer1::DataType::kHALF)
     {
-        config->setFlag(BuilderFlag::kFP16);
+        config->setFlag(nvinfer1::BuilderFlag::kFP16);
     }
-    if (dataType == DataType::kINT8)
+    if (dataType == nvinfer1::DataType::kINT8)
     {
-        config->setFlag(BuilderFlag::kINT8);
+        config->setFlag(nvinfer1::BuilderFlag::kINT8);
     }
     builder->setMaxBatchSize(mParams.batchSize);
 
-    if (dataType == DataType::kINT8)
+    if (dataType == nvinfer1::DataType::kINT8)
     {
         ONNXBatchStream calibrationStream(mParams);
         calibrator.reset(new Int8EntropyCalibrator2<ONNXBatchStream>(
-                calibrationStream, -1, mParams.networkName.c_str(), mParams.inputTensorNames[0].c_str()));
+                calibrationStream, 0, mParams.networkName.c_str(), mParams.inputTensorNames[0].c_str()));
         config->setInt8Calibrator(calibrator.get());
     }
 
@@ -321,13 +321,13 @@ bool SampleINT8::constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& builder,
     }
     config->setProfileStream(*profileStream);
 
-    SampleUniquePtr<IHostMemory> plan{builder->buildSerializedNetwork(*network, *config)};
+    SampleUniquePtr<nvinfer1::IHostMemory> plan{builder->buildSerializedNetwork(*network, *config)};
     if (!plan)
     {
         return false;
     }
 
-    SampleUniquePtr<IRuntime> runtime{createInferRuntime(sample::gLogger.getTRTLogger())};
+    SampleUniquePtr<nvinfer1::IRuntime> runtime{nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger())};
     if (!runtime)
     {
         return false;

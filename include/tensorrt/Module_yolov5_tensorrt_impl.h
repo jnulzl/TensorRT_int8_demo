@@ -43,7 +43,7 @@ private:
                           TRTUniquePtr<nvinfer1::INetworkDefinition>& network, TRTUniquePtr<nvinfer1::IBuilderConfig>& config,
                           TRTUniquePtr<nvonnxparser::IParser>& parser);
 
-    bool isSupported(DataType dataType);
+    bool isSupported(nvinfer1::DataType dataType);
 
 private:
     TRTUniquePtr<nvinfer1::INetworkDefinition> network_;
