@@ -49,7 +49,7 @@ if(USE_CUDA)
     )
 
     target_link_libraries(${LIB_NAME} PUBLIC
-            cuda
+    #        cuda
             cudart
             nvinfer
             nvparsers

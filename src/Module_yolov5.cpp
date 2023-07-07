@@ -22,7 +22,7 @@ void CModule_yolov5::process(const uint8_t* src, int src_height, int src_width, 
     ANY_POINTER_CAST(impl_, CModule_yolov5_impl)->process(src, src_height, src_width, inputDataType);
 }
 
-const std::vector<BoxInfo>& CModule_yolov5::get_result()
+const BoxInfos* CModule_yolov5::get_result()
 {
     return ANY_POINTER_CAST(impl_, CModule_yolov5_impl)->get_result();
 }

@@ -263,42 +263,52 @@ void CModule_yolov5_tensorrt_impl::pre_process_gpu(const uint8_t *src, int src_h
                           {0, 0, config_.net_inp_width, config_.net_inp_height},
                           aCoeffs,
                           NPPI_INTER_LINEAR);
-    /**********************bgr2rgb*************************/
-    const int aDstOrder[3] = {2, 1, 0};
-    nppiSwapChannels_8u_C3IR(dst_ptr_d_,
-                             sizeof(Npp8u) * config_.net_inp_width * config_.net_inp_channels,
-                             {config_.net_inp_width, config_.net_inp_height},
-                             aDstOrder);
-
+    if(0 == config_.model_include_preprocess)
+    {
+        /**********************bgr2rgb*************************/
+        const int aDstOrder[3] = {2, 1, 0};
+        nppiSwapChannels_8u_C3IR(dst_ptr_d_,
+                                 sizeof(Npp8u) * config_.net_inp_width * config_.net_inp_channels,
+                                 {config_.net_inp_width, config_.net_inp_height},
+                                 aDstOrder);
+    }
     /**********************uint8 -> float*****************/
     nppiConvert_8u32f_C3R(dst_ptr_d_, sizeof(Npp8u) * config_.net_inp_width * config_.net_inp_channels,
                           dst_float_ptr_d_,
                           sizeof(Npp32f) * config_.net_inp_width * config_.net_inp_channels,
                           {config_.net_inp_width, config_.net_inp_height});
 
-    /**********************(x - a) / b*********************/
-    /*1.-------- y = (x - a) --------*/
-    // const Npp32f means[3] = {0.0f, 0.0f, 0.0f};
-    nppiSubC_32f_C3IR(config_.means, dst_float_ptr_d_, sizeof(Npp32f) * config_.net_inp_width * config_.net_inp_channels, {config_.net_inp_width, config_.net_inp_height});
+    if(0 == config_.model_include_preprocess)
+    {
+        /**********************(x - a) / b*********************/
+        /*1.-------- y = (x - a) --------*/
+        // const Npp32f means[3] = {0.0f, 0.0f, 0.0f};
+        nppiSubC_32f_C3IR(config_.means, dst_float_ptr_d_, sizeof(Npp32f) * config_.net_inp_width * config_.net_inp_channels, {config_.net_inp_width, config_.net_inp_height});
 
-    /*2.---------- y * s ----------*/
-    // const Npp32f scales[3] = {0.00392157f, 0.00392157f, 0.00392157f};
-    nppiMulC_32f_C3IR(config_.scales, dst_float_ptr_d_, sizeof(Npp32f) * config_.net_inp_width * config_.net_inp_channels, {config_.net_inp_width, config_.net_inp_height});
+        /*2.---------- y * s ----------*/
+        // const Npp32f scales[3] = {0.00392157f, 0.00392157f, 0.00392157f};
+        nppiMulC_32f_C3IR(config_.scales, dst_float_ptr_d_, sizeof(Npp32f) * config_.net_inp_width * config_.net_inp_channels, {config_.net_inp_width, config_.net_inp_height});
 
-    /**********************hwc2chw*************************/
-    Npp32f * const aDst[3] = {dst_chw_float_ptr_d_,
-                              dst_chw_float_ptr_d_ + config_.net_inp_width * config_.net_inp_height,
-                              dst_chw_float_ptr_d_ + 2 * config_.net_inp_width * config_.net_inp_height};
-    nppiCopy_32f_C3P3R(dst_float_ptr_d_,
-                       sizeof(Npp32f) * config_.net_inp_width * config_.net_inp_channels,
-                       aDst,
-                       sizeof(Npp32f) * config_.net_inp_width,
-                       {config_.net_inp_width, config_.net_inp_height});
-
-
-    /*------copy preprocessed data to net input poiner------*/
-    CUDACHECK(cudaMemcpy(buffers_->getDeviceBuffer(config_.input_names[0]), dst_chw_float_ptr_d_,
-                     sizeof(Npp32f) * dst_pixel_num_, cudaMemcpyDeviceToDevice));
+        /**********************hwc2chw*************************/
+        Npp32f * const aDst[3] = {dst_chw_float_ptr_d_,
+                                  dst_chw_float_ptr_d_ + config_.net_inp_width * config_.net_inp_height,
+                                  dst_chw_float_ptr_d_ + 2 * config_.net_inp_width * config_.net_inp_height};
+        nppiCopy_32f_C3P3R(dst_float_ptr_d_,
+                           sizeof(Npp32f) * config_.net_inp_width * config_.net_inp_channels,
+                           aDst,
+                           sizeof(Npp32f) * config_.net_inp_width,
+                           {config_.net_inp_width, config_.net_inp_height});
+        /*------copy preprocessed data to net input poiner------*/
+        CUDACHECK(cudaMemcpy(buffers_->getDeviceBuffer(config_.input_names[0]), dst_chw_float_ptr_d_,
+                         sizeof(Npp32f) * dst_pixel_num_, cudaMemcpyDeviceToDevice));
+    }
+    else
+    {
+        /*------copy preprocessed data to net input poiner------*/
+        CUDACHECK(cudaMemcpy(buffers_->getDeviceBuffer(config_.input_names[0]), dst_float_ptr_d_,
+                         sizeof(Npp32f) * dst_pixel_num_, cudaMemcpyDeviceToDevice));
+        
+    }
 }
 
 void CModule_yolov5_tensorrt_impl::pre_process(const uint8_t *src, int src_height, int src_width,

@@ -16,7 +16,7 @@ public:
 
 	void process(const uint8_t* src, int src_height, int src_width, InputDataType inputDataType = InputDataType::IMG_BGR);
 
-	const std::vector<BoxInfo>& get_result();
+    const BoxInfos* get_result();
 
 protected:
     virtual void pre_process(const uint8_t* src, int src_height, int src_width, InputDataType inputDataType = InputDataType::IMG_BGR);
@@ -34,13 +34,14 @@ protected:
     std::vector<uint8_t> src_resize_;
     std::vector<float> data_out_;
 
+    std::vector<int> keep_indexs_;
+    std::vector<int> img_heights_;
+    std::vector<int> img_widths_;
+
+    std::vector<BoxInfo> boxs_tmp_;
+    std::vector<BoxInfos> boxs_batch_;
+
     int step_each_obj_;
-	std::vector<BoxInfo> boxs_;
-    int img_height_;
-    int img_width_;
-#if !defined(USE_DETECT_LAYER)
-    std::vector<std::vector<float>> output_tmp_;
-#endif
 };
 
 #endif // MODULE_YOLOV5_IMPL_H

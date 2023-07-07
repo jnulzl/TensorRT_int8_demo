@@ -16,7 +16,7 @@ public:
 
     void process(const uint8_t* src, int src_height, int src_width, InputDataType inputDataType = InputDataType::IMG_BGR);
 
-    const std::vector<BoxInfo>& get_result();
+    const BoxInfos* get_result();
 
 private:
 	AW_ANY_POINTER impl_;

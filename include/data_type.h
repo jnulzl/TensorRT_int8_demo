@@ -28,8 +28,8 @@ struct BaseConfig {
     int device_id = 0;
 #ifdef USE_TENSORRT
     int dlaCore = -1;
-        bool fp16 = false;
-        bool int8 = false;
+    bool fp16 = false;
+    bool int8 = false;
 #endif
 #endif
 };
@@ -43,6 +43,7 @@ struct YoloConfig : public BaseConfig {
     int num_cls = 1;
     float conf_thres;
     float nms_thresh;
+    int model_include_preprocess;
     std::vector<int> strides;
     std::vector<std::vector<float>> anchor_grids;
 };
@@ -73,8 +74,15 @@ typedef struct {
     float x2;
     float y2;
     float score;
+    float area;
     int label;
 } BoxInfo;
+
+typedef struct {
+    BoxInfo* boxes;
+    int size;
+    int capacity;
+} BoxInfos;
 
 typedef struct
 {

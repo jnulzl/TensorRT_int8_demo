@@ -26,7 +26,7 @@ target_compile_definitions(${exe_name} PRIVATE
         )
 
 target_link_libraries(${exe_name} PRIVATE
-        cuda
+#        cuda
         cudart
         nvinfer
         nvparsers
