@@ -129,6 +129,7 @@ bool set_quant_params(const std::string& config_json_path, SampleINT8Params& par
     params.is_save_jpg_after_bgr2rgb     = 0 != static_cast<int>(json_file["is_save_jpg_after_bgr2rgb"]);
     return true;
 }
+
 void process_color_image(const SampleINT8Params& params, float* preprocess_data)
 {
     size_t src_pixel_num_pre = 0;

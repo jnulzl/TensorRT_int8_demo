@@ -1,6 +1,7 @@
 //
 // Created by jnulzl on 2020/6/20.
 //
+#include <string.h>
 #include <vector>
 #include <algorithm>
 
@@ -46,45 +47,71 @@ void decode_net_output(float* src, int src_n, int src_c, int src_h, int src_w,
     }
 }
 
-void nms(std::vector<BoxInfo>& input_boxes, float nms_thresh) {
-    std::sort(input_boxes.begin(), input_boxes.end(), [](BoxInfo a, BoxInfo b) {return a.score > b.score; });
-    std::vector<float>vArea(input_boxes.size());
-    for (int i = 0; i < int(input_boxes.size()); ++i)
+int cmpfunc (const void * a, const void * b)
+{
+    BoxInfo* boxa = (BoxInfo*)a;
+    BoxInfo* boxb = (BoxInfo*)b;
+    return (boxa->score - boxb->score)  > 0 ? 0 : 1;
+}
+
+void nms(BoxInfo* boxes, int* delete_obj_index, int num_box, int num_cls, float nms_thresh,
+         int* keep_indexs, int* num_keep)
+{
+    qsort(boxes, num_box, sizeof(BoxInfo), cmpfunc);
+    memset(delete_obj_index, 0, sizeof(int) * num_box);
+
+    for (int cls = 0; cls < num_cls; ++cls)
     {
-        vArea[i] = (input_boxes.at(i).x2 - input_boxes.at(i).x1 + 1)
-                   * (input_boxes.at(i).y2 - input_boxes.at(i).y1 + 1);
-    }
-    for (int i = 0; i < int(input_boxes.size()); ++i)
-    {
-        for (int j = i + 1; j < int(input_boxes.size());)
+        for (int idx = 0; idx < num_box; ++idx)
         {
-            float xx1 = std::max(input_boxes[i].x1, input_boxes[j].x1);
-            float yy1 = std::max(input_boxes[i].y1, input_boxes[j].y1);
-            float xx2 = std::min(input_boxes[i].x2, input_boxes[j].x2);
-            float yy2 = std::min(input_boxes[i].y2, input_boxes[j].y2);
-            float w = std::max(float(0), xx2 - xx1 + 1);
-            float   h = std::max(float(0), yy2 - yy1 + 1);
-            float   inter = w * h;
-            float ovr = inter / (vArea[i] + vArea[j] - inter);
-            if (ovr >= nms_thresh)
+            if(delete_obj_index[idx] || cls != boxes[idx].label)
             {
-                input_boxes.erase(input_boxes.begin() + j);
-                vArea.erase(vArea.begin() + j);
+                continue;
             }
-            else
+            for (int idy = idx + 1; idy < num_box; ++idy)
             {
-                j++;
+                if(delete_obj_index[idy] || cls != boxes[idy].label)
+                {
+                    continue;
+                }
+                float xx1 = std::max(boxes[idx].x1, boxes[idy].x1);
+                float yy1 = std::max(boxes[idx].y1, boxes[idy].y1);
+                float xx2 = std::max(boxes[idx].x2, boxes[idy].x2);
+                float yy2 = std::max(boxes[idx].y2, boxes[idy].y2);
+                float w = std::max(0.0f, xx2 - xx1 + 1);
+                float h = std::max(0.0f, yy2 - yy1 + 1);
+                float inter = w * h;
+                float iou = inter / (boxes[idx].area + boxes[idy].area - inter);
+                if(iou > nms_thresh)
+                {
+                    delete_obj_index[idy] = 1;
+                }
             }
         }
+    }
+
+    *num_keep = 0;
+    for (int i = 0; i < num_box; ++i)
+    {
+        if(delete_obj_index[i])
+        {
+            continue;
+        }
+        keep_indexs[(*num_keep)++] = i;
+        if(*num_keep >= MAX_DET_NUM)
+            break;
     }
 }
 
 void non_max_suppression(float* src, int src_height, int src_width, float conf_thres, float nms_thresh,
-                         std::vector<BoxInfo>& dets) {
-    dets.clear();
+                         int net_input_height, int net_input_width, int img_height, int img_width,
+                         BoxInfo* dets, int* keep_indexs, int* num_keep)
+{
+    float gain = 1.0f * std::max(net_input_height, net_input_width) / std::max(img_height, img_width);
 
-    int num_cls = src_width - 5;
-    for (long idx = 0; idx < src_height; idx++) {
+    int num_det = 0;
+    for (long idx = 0; idx < src_height; idx++)
+    {
         const int step = idx * src_width;
         /* cx, cy, width, height, obj_conf, cls_conf0, cls_conf1, ..., cls_conf{n} */
         float obj_conf = src[step + 4];
@@ -102,129 +129,25 @@ void non_max_suppression(float* src, int src_height, int src_width, float conf_t
         if (max_score < conf_thres)
             continue;
         /* xywh2xyxy */
-        BoxInfo box;
         float cx       = src[step + 0];
         float cy       = src[step + 1];
         float width_2  = src[step + 2] / 2;
         float height_2 = src[step + 3] / 2;
-        box.x1 = cx - width_2;
-        box.y1 = cy - height_2;
-        box.x2 = cx + width_2;
-        box.y2 = cy + height_2;
-        box.score = max_score;
-        box.label = obj_cls;
-        dets.push_back(box);
+        dets[num_det].x1 = (cx - width_2) / gain;
+        dets[num_det].y1 = (cy - height_2) / gain;
+        dets[num_det].x2 = (cx + width_2) / gain;
+        dets[num_det].y2 = (cy + height_2) /gain;
+
+        dets[num_det].x1 = dets[num_det].x1 > 0 ? dets[num_det].x1 : 0;
+        dets[num_det].y1 = dets[num_det].y1 > 0 ? dets[num_det].y1 : 0;
+        dets[num_det].x2 = dets[num_det].x2 < img_width ? dets[num_det].x2 : img_width - 1;
+        dets[num_det].y2 = dets[num_det].y2 < img_height ? dets[num_det].y2 : img_height - 1;
+
+        dets[num_det].score = max_score;
+        dets[num_det].area = (dets[num_det].x2 - dets[num_det].x1 + 1) * (dets[num_det].y2 - dets[num_det].y1 + 1);
+        dets[num_det].label = obj_cls;
+        num_det++;
     }
 
-    nms(dets, nms_thresh);
+    nms(dets, (int*)(src), num_det, src_width - 5, nms_thresh, keep_indexs, num_keep);
 }
-
-
-void scale_coords(BoxInfo& box, float net_input_height, float net_input_width,
-                    float img_height, float img_width) {
-
-    float gain = 1.0f * std::max(net_input_height, net_input_width) / std::max(img_height, img_width);
-//    float pad_w = (net_input_width - img_width * gain) / 2.0f;
-//    float pad_h = (net_input_height - img_height * gain) / 2.0f;
-    float pad_w = 0.0f;
-    float pad_h = 0.0f;
-
-    box.x1 = (box.x1 - pad_w) / gain;
-    box.x2 = (box.x2 - pad_w) / gain;
-    box.y1 = (box.y1 - pad_h) / gain;
-    box.y2 = (box.y2 - pad_h) / gain;
-
-    box.x1 = box.x1 > 0 ? box.x1 : 0;
-    box.y1 = box.y1 > 0 ? box.y1 : 0;
-    box.x2 = box.x2 < img_width ? box.x2 : img_width - 1;
-    box.y2 = box.y2 < img_height ? box.y2 : img_height - 1;
-}
-
-
-void postprocess(std::vector<BoxInfo>& dets, float net_input_height, float net_input_width,
-    float img_height, float img_width) {
-    for (auto iter = dets.begin(); iter != dets.end(); )
-    {
-        scale_coords(*iter, net_input_height, net_input_width, img_height, img_width);
-
-        float x1 = iter->x1;
-        float y1 = iter->y1;
-        float x2 = iter->x2;
-        float y2 = iter->y2;
-        float width = std::abs(x2 - x1);
-        float height = std::abs(y2 - y1);
-
-        if (width < 5 || height < 5)
-        {
-            iter = dets.erase(iter);
-            continue;
-        }
-
-        float ratio_wh = std::abs(width / height);
-        if (ratio_wh > 5 || ratio_wh < 0.2)
-        {
-            iter = dets.erase(iter);
-            continue;
-        }
-        ++iter;
-    }
-}
-
-template <typename Dtype>
-void Permute(const Dtype* bottom_data, const std::vector<int>& bottom_data_shape, const std::vector<int>& permute_order,
-                    const int num_axes, Dtype* top_data, std::vector<int>& top_data_shape) {
-    std::vector<int> old_steps(num_axes, 1);
-    top_data_shape.resize(num_axes);
-    for (int i = 0; i < num_axes; ++i) {
-        if (i == num_axes - 1) {
-            old_steps[i] = 1;
-        } else {
-            old_steps[i] = 1;
-            for (int idx = i+1; idx < num_axes; ++idx) {
-                old_steps[i] *= bottom_data_shape[idx];
-            }
-        }
-        top_data_shape[i] = bottom_data_shape[permute_order[i]];
-    }
-
-    std::vector<int> new_steps(num_axes,1);
-    for (int i = 0; i < num_axes; ++i) {
-        if (i == num_axes - 1) {
-            new_steps[i] = 1;
-        } else {
-            new_steps[i] = 1;
-            for (int idx = i+1; idx < num_axes; ++idx) {
-                new_steps[i] *= top_data_shape[idx];
-            }
-        }
-    }
-
-    int count = 1;
-    for (int idx = 0; idx < num_axes; ++idx) {
-        count *= bottom_data_shape[idx];
-    }
-    for (int i = 0; i < count; ++i) {
-        int old_idx = 0;
-        int idx = i;
-        for (int j = 0; j < num_axes; ++j) {
-            int order = permute_order[j];
-            old_idx += (idx / new_steps[j]) * old_steps[order];
-            idx %= new_steps[j];
-        }
-//        top_data[i] = (Dtype)(1.0) / (1 + std::exp(-bottom_data[old_idx]));
-        top_data[i] = bottom_data[old_idx];
-    }
-}
-
-template void Permute<float>(const float* bottom_data, const std::vector<int>& bottom_data_shape, const std::vector<int>& permute_order,
-                                const int num_axes, float* top_data, std::vector<int>& top_data_shape);
-
-
-template <typename Dtype>
-void Sigmod(Dtype* bottom_data, const int bottom_data_num) {
-    for (int idx = 0; idx < bottom_data_num; ++idx) {
-        bottom_data[idx] = (Dtype)(1.0) / (1 + std::exp(-bottom_data[idx])); //sigmod
-    }
-}
-
-template void Sigmod<float>(float* bottom_data, const int bottom_data_num);

@@ -1,7 +1,6 @@
 set(demo_src demo.cpp)
 get_filename_component(exe_name ${demo_src} NAME_WLE)
-
-    add_executable(${exe_name} ${demo_src})
+add_executable(${exe_name} ${demo_src})
 target_include_directories(${exe_name} PRIVATE  ${PROJECT_SOURCE_DIR}/include)
 
 string(TOLOWER ${PROJECT_NAME} LIB_NAME)

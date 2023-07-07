@@ -59,15 +59,25 @@ void CModule_yolov5_impl::pre_process(const uint8_t *src, int src_height, int sr
                                 src_resize_.data(), config_.net_inp_height, config_.net_inp_width,
                                 des_stride,
                                 num_channels, 1);
-
-    color_normalize_scale_and_chw(src_resize_.data(), config_.net_inp_height, config_.net_inp_width,
-                                  config_.net_inp_channels * config_.net_inp_width, config_.means, config_.scales,
-                                  data_in_.data(), 1,
+    if(config_.model_include_preprocess)
+    {
+        int num_data = src_resize_.size();
+        for(int idx = 0; idx < num_data; idx++)
+        {
+            data_in_[idx] = 1.0f * src_resize_[idx];
+        }
+    }
+    else
+    {
+        color_normalize_scale_and_chw(src_resize_.data(), config_.net_inp_height, config_.net_inp_width,
+                                      config_.net_inp_channels * config_.net_inp_width, config_.means, config_.scales,
+                                      data_in_.data(), 1,
 #if defined(USE_TFLITE) || defined(USE_TFLITEGPU)
-            0);
+                0);
 #else
-                                  1);
+                                      1);
 #endif
+    }
 }
 
 void CModule_yolov5_impl::process(const uint8_t* src, int src_height, int src_width, InputDataType inputDataType)
@@ -104,8 +114,10 @@ void CModule_yolov5_impl::process(const uint8_t* src, int src_height, int src_wi
 void CModule_yolov5_impl::post_process()
 {
     int num_obj = data_out_.size() / step_each_obj_;
-    non_max_suppression(data_out_.data(), num_obj, step_each_obj_, config_.conf_thres, config_.nms_thresh, boxs_);
-    postprocess(boxs_, config_.net_inp_height, config_.net_inp_width, img_height_, img_width_);
+    non_max_suppression(data_out_.data(), num_obj, step_each_obj_, config_.conf_thres, config_.nms_thresh, 
+                        config_.net_inp_height, config_.net_inp_width, img_height_, img_width_,
+                        );
+    //postprocess(boxs_, config_.net_inp_height, config_.net_inp_width, img_height_, img_width_);
 }
 
 const std::vector<BoxInfo>& CModule_yolov5_impl::get_result()

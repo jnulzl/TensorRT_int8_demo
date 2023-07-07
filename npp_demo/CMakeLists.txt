@@ -13,7 +13,7 @@ target_link_options(
         )
 
 target_link_libraries(${exe_name} PRIVATE
-        cuda
+#        cuda
         cudart
         nppig
         nppidei
