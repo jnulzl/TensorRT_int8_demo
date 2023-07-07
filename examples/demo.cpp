@@ -98,22 +98,22 @@ int main(int argc, char* argv[])
         const BoxInfos* res = yolov5.get_result();
         std::cout << "frame_id:" << frame_id << " Detected obj num : " <<  res->size << " TensorRT process each frame time = " << std::chrono::duration_cast<std::chrono::microseconds>(finishTP1 - startTP).count() << " us" << std::endl;
         //show result
-         for (size_t idx = 0; idx < res->size; idx++)
-         {
-             int xmin    = res->boxes[idx].x1;
-             int ymin    = res->boxes[idx].y1;
-             int xmax    = res->boxes[idx].x2;
-             int ymax    = res->boxes[idx].y2;
-             float score = res->boxes[idx].score;
-             int label   = res->boxes[idx].label;
-             //std::cout << "xyxy : " << xmin << " " << ymin << " " << xmax << " " << ymax << " " << score << " " << label << std::endl;
-             cv::rectangle(img_show, cv::Point2i(xmin, ymin), cv::Point2i(xmax, ymax), cv::Scalar(255, 0, 0), 2);
-             cv::putText(img_show, std::to_string(label), cv::Point(xmin, ymin), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 0, 255), 2);
-             cv::putText(img_show, std::to_string(score), cv::Point(xmax, ymin), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(0, 255, 255), 2);
-         }
-         cv::imwrite("res/" + std::to_string(frame_id) + ".jpg",img_show);
-         if(frame_id > 20)
-             break;
+        for (size_t idx = 0; idx < res->size; idx++)
+        {
+            int xmin    = res->boxes[idx].x1;
+            int ymin    = res->boxes[idx].y1;
+            int xmax    = res->boxes[idx].x2;
+            int ymax    = res->boxes[idx].y2;
+            float score = res->boxes[idx].score;
+            int label   = res->boxes[idx].label;
+            //std::cout << "xyxy : " << xmin << " " << ymin << " " << xmax << " " << ymax << " " << score << " " << label << std::endl;
+            cv::rectangle(img_show, cv::Point2i(xmin, ymin), cv::Point2i(xmax, ymax), cv::Scalar(255, 0, 0), 2);
+            cv::putText(img_show, std::to_string(label), cv::Point(xmin, ymin), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(255, 0, 255), 2);
+            cv::putText(img_show, std::to_string(score), cv::Point(xmax, ymin), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(0, 255, 255), 2);
+        }
+        cv::imwrite("res/" + std::to_string(frame_id) + ".jpg",img_show);
+        if(frame_id > 20)
+            break;
         frame_id++;
     }
     std::chrono::time_point<std::chrono::system_clock> end_time = std::chrono::system_clock::now();

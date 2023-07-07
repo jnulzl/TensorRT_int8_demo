@@ -21,7 +21,6 @@
  * @param stride      : net stride, eg : 8
  * @param anchor_grid : yolo anchors, eg : [10, 13, 16, 30, 33, 23]
  */
-
 void decode_net_output(float* src, int src_n, int src_c, int src_h, int src_w,
                         int stride, const float* anchor_grid);
 
