@@ -8,7 +8,7 @@
 #include <cstdint>
 #include "data_type.h"
 
-#define MAX_DET_NUM 100
+#define MAX_DET_NUM 48
 
 /**
  * @details           : decode yolo net output to objs

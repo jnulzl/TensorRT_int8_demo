@@ -34,10 +34,10 @@ CModule_yolov5_tensorrt_impl::~CModule_yolov5_tensorrt_impl()
 #ifdef AI_ALG_DEBUG
     std::printf("%d,%s\n", __LINE__, __FUNCTION__);
 #endif
-    cudaFastFree(src_ptr_d_);
-    cudaFastFree(dst_ptr_d_);
-    cudaFastFree(dst_float_ptr_d_);
-    cudaFastFree(dst_chw_float_ptr_d_);
+    cudaFastFree(src_ptr_d_, config_.device_id);
+    cudaFastFree(dst_ptr_d_, config_.device_id);
+    cudaFastFree(dst_float_ptr_d_, config_.device_id);
+    cudaFastFree(dst_chw_float_ptr_d_, config_.device_id);
 }
 
 void CModule_yolov5_tensorrt_impl::engine_init()
@@ -174,17 +174,17 @@ void CModule_yolov5_tensorrt_impl::engine_init()
     src_ptr_d_ = nullptr;
     src_pixel_num_pre_ = 0;
     dst_pixel_num_ = config_.net_inp_height  * config_.net_inp_width * config_.net_inp_channels;
-    dst_ptr_d_ = reinterpret_cast<Npp8u*>(cudaFastMalloc(sizeof(Npp8u) * dst_pixel_num_));
+    dst_ptr_d_ = reinterpret_cast<Npp8u*>(cudaFastMalloc(sizeof(Npp8u) * dst_pixel_num_, config_.device_id));
     if(!dst_ptr_d_)
     {
         AIWORKS_ASSERT(0);
     }
-    dst_float_ptr_d_ = reinterpret_cast<Npp32f*>(cudaFastMalloc(sizeof(Npp32f) * dst_pixel_num_));
+    dst_float_ptr_d_ = reinterpret_cast<Npp32f*>(cudaFastMalloc(sizeof(Npp32f) * dst_pixel_num_, config_.device_id));
     if(!dst_float_ptr_d_)
     {
         AIWORKS_ASSERT(0);
     }
-    dst_chw_float_ptr_d_  = reinterpret_cast<Npp32f*>(cudaFastMalloc(sizeof(Npp32f) * dst_pixel_num_));
+    dst_chw_float_ptr_d_  = reinterpret_cast<Npp32f*>(cudaFastMalloc(sizeof(Npp32f) * dst_pixel_num_, config_.device_id));
     if(!dst_chw_float_ptr_d_)
     {
         AIWORKS_ASSERT(0);
@@ -192,35 +192,46 @@ void CModule_yolov5_tensorrt_impl::engine_init()
 }
 
 void CModule_yolov5_tensorrt_impl::pre_process_cpu(const uint8_t *src, int src_height, int src_width,
-                                               InputDataType inputDataType)
+                                               InputDataType inputDataType, int batch_id)
 {
 #ifdef AI_ALG_DEBUG
     std::cout << "Using pre_process_cpu" <<  std::endl;
 #endif
+    if(!src)
+    {
+        memset(reinterpret_cast<float*>(buffers_->getHostBuffer(config_.input_names[0])) + batch_id * config_.net_inp_channels * config_.net_inp_width * config_.net_inp_height,
+               0, sizeof(float) * config_.net_inp_channels * config_.net_inp_width * config_.net_inp_height);
+        return;
+    }
+
     CModule_yolov5_impl::pre_process(src, src_height, src_width, inputDataType);
-
     // Read the input data into the managed buffers
-    memcpy(buffers_->getHostBuffer(config_.input_names[0]),
+    memcpy(
+            reinterpret_cast<float*>(buffers_->getHostBuffer(config_.input_names[0])) + batch_id * config_.net_inp_channels * config_.net_inp_width * config_.net_inp_height,
            net_input_float_tensor_.data,
-           sizeof(float) * config_.batch_size * config_.net_inp_channels * config_.net_inp_height * config_.net_inp_width);
-
-    // Memcpy from host input buffers to device input buffers
-    buffers_->copyInputToDevice();
+           sizeof(float) * config_.net_inp_channels * config_.net_inp_height * config_.net_inp_width);
 }
 
 void CModule_yolov5_tensorrt_impl::pre_process_gpu(const uint8_t *src, int src_height, int src_width,
-                                                   InputDataType inputDataType)
+                                                   InputDataType inputDataType, int batch_id)
 {
 #ifdef AI_ALG_DEBUG
     std::cout << "Using pre_process_gpu" <<  std::endl;
 #endif
+    if(!src)
+    {
+        CUDACHECK(cudaMemset(reinterpret_cast<Npp32f*>(buffers_->getDeviceBuffer(config_.input_names[0])) + batch_id * config_.net_inp_channels * config_.net_inp_width * config_.net_inp_height,
+                             0, sizeof(Npp32f) * config_.net_inp_channels * config_.net_inp_width * config_.net_inp_height));
+
+        return;
+    }
     /************Device memory allocator and initialization***********/
     size_t src_pixel_num = src_height * src_width * config_.net_inp_channels;
     if(src_pixel_num_pre_ < src_pixel_num)
     {
-        cudaFastFree(src_ptr_d_);
+        cudaFastFree(src_ptr_d_, config_.device_id);
         src_pixel_num_pre_ = src_pixel_num;
-        src_ptr_d_ = reinterpret_cast<Npp8u*>(cudaFastMalloc(sizeof(Npp8u) * src_pixel_num_pre_));
+        src_ptr_d_ = reinterpret_cast<Npp8u*>(cudaFastMalloc(sizeof(Npp8u) * src_pixel_num_pre_, config_.device_id));
     }
     CUDACHECK(cudaMemcpy(src_ptr_d_, src, sizeof(Npp8u) * src_pixel_num, cudaMemcpyHostToDevice));
 
@@ -299,15 +310,18 @@ void CModule_yolov5_tensorrt_impl::pre_process_gpu(const uint8_t *src, int src_h
                            sizeof(Npp32f) * config_.net_inp_width,
                            {config_.net_inp_width, config_.net_inp_height});
         /*------copy preprocessed data to net input poiner------*/
-        CUDACHECK(cudaMemcpy(buffers_->getDeviceBuffer(config_.input_names[0]), dst_chw_float_ptr_d_,
-                         sizeof(Npp32f) * dst_pixel_num_, cudaMemcpyDeviceToDevice));
+        CUDACHECK(cudaMemcpy(
+                reinterpret_cast<Npp32f*>(buffers_->getDeviceBuffer(config_.input_names[0])) + batch_id * config_.net_inp_channels * config_.net_inp_width * config_.net_inp_height,
+                dst_chw_float_ptr_d_,
+                sizeof(Npp32f) * dst_pixel_num_, cudaMemcpyDeviceToDevice));
     }
     else
     {
         /*------copy preprocessed data to net input poiner------*/
-        CUDACHECK(cudaMemcpy(buffers_->getDeviceBuffer(config_.input_names[0]), dst_float_ptr_d_,
-                         sizeof(Npp32f) * dst_pixel_num_, cudaMemcpyDeviceToDevice));
-        
+        CUDACHECK(cudaMemcpy(
+                reinterpret_cast<Npp32f*>(buffers_->getDeviceBuffer(config_.input_names[0])) + batch_id * config_.net_inp_channels * config_.net_inp_width * config_.net_inp_height,
+                dst_float_ptr_d_,
+                sizeof(Npp32f) * dst_pixel_num_, cudaMemcpyDeviceToDevice));
     }
 }
 
@@ -315,7 +329,29 @@ void CModule_yolov5_tensorrt_impl::pre_process(const uint8_t *src, int src_heigh
                                                InputDataType inputDataType)
 {
     //pre_process_cpu(src, src_height, src_width, inputDataType);
+    // Memcpy from host input buffers to device input buffers
+    //buffers_->copyInputToDevice();
+
     pre_process_gpu(src, src_height, src_width, inputDataType);
+}
+
+void CModule_yolov5_tensorrt_impl::pre_batch_process(const ImageInfoUint8* imageInfos, int batch_size)
+{
+//    for (int bs = 0; bs < batch_size; ++bs)
+//    {
+//        pre_process_cpu(imageInfos[bs].data,
+//                        imageInfos[bs].img_height, imageInfos[bs].img_width,
+//                        imageInfos[bs].img_data_type, bs);
+//        // Memcpy from host input buffers to device input buffers
+//        buffers_->copyInputToDevice();
+//    }
+
+    for (int bs = 0; bs < batch_size; ++bs)
+    {
+        pre_process_gpu(imageInfos[bs].data,
+                        imageInfos[bs].img_height, imageInfos[bs].img_width,
+                        imageInfos[bs].img_data_type, bs);
+    }
 }
 
 void CModule_yolov5_tensorrt_impl::engine_run()
@@ -331,7 +367,7 @@ void CModule_yolov5_tensorrt_impl::engine_run()
 
 #ifdef AI_ALG_DEBUG
     std::chrono::time_point<std::chrono::system_clock> end_time = std::chrono::system_clock::now();
-    std::printf("TensorRT inference time %lld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end_time - begin_time).count());
+    std::printf("TensorRT inference time %ld us\n", std::chrono::duration_cast<std::chrono::microseconds>(end_time - begin_time).count());
 #endif
 
 #ifdef AI_ALG_DEBUG
@@ -375,7 +411,7 @@ void CModule_yolov5_tensorrt_impl::engine_run()
             step *= mOutputDims.d[idy];
         }
         float* output = static_cast<float*>(buffers_->getHostBuffer(config_.output_names[idx]));
-        memcpy(data_ + idx * step_tmp, output, sizeof(float) * step);
+        memcpy(data_ + step_tmp, output, sizeof(float) * step);
         if(1 != net_output_num)
         {
             decode_net_output(data_ + idx * step_tmp, mOutputDims.d[0], mOutputDims.d[1], mOutputDims.d[2],
@@ -385,7 +421,7 @@ void CModule_yolov5_tensorrt_impl::engine_run()
     }
 #ifdef AI_ALG_DEBUG
     end_time = std::chrono::system_clock::now();
-    std::printf("postprocess time %lld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end_time - begin_time).count());
+    std::printf("postprocess time %ld us\n", std::chrono::duration_cast<std::chrono::microseconds>(end_time - begin_time).count());
 #endif
 }
 

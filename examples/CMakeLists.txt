@@ -1,4 +1,4 @@
-set(demo_src demo.cpp)
+set(demo_src demo_thread_dingshi_ceshi.cpp)
 get_filename_component(exe_name ${demo_src} NAME_WLE)
 add_executable(${exe_name} ${demo_src})
 target_include_directories(${exe_name} PRIVATE  ${PROJECT_SOURCE_DIR}/include)

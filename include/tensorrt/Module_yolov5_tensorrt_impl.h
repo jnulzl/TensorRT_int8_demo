@@ -28,9 +28,12 @@ private:
     virtual void engine_run() override;
 
     virtual void pre_process(const uint8_t* src, int src_height, int src_width, InputDataType inputDataType = InputDataType::IMG_BGR) override;
-    
-    void pre_process_cpu(const uint8_t* src, int src_height, int src_width, InputDataType inputDataType = InputDataType::IMG_BGR);
-    void pre_process_gpu(const uint8_t* src, int src_height, int src_width, InputDataType inputDataType = InputDataType::IMG_BGR);
+    virtual void pre_batch_process(const ImageInfoUint8* imageInfos, int batch_size) override;
+
+    void pre_process_cpu(const uint8_t* src, int src_height, int src_width,
+                         InputDataType inputDataType = InputDataType::IMG_BGR, int batch_id = 0);
+    void pre_process_gpu(const uint8_t* src, int src_height, int src_width,
+                         InputDataType inputDataType = InputDataType::IMG_BGR, int batch_id = 0);
 private:
 
     template <typename T>

@@ -89,15 +89,17 @@ static void fastFree(void* ptr)
         }                                                                                                              \
     } while (0)
 
-static void* cudaFastMalloc(size_t size)
+static void* cudaFastMalloc(size_t size, size_t device_id)
 {
+    CUDACHECK(cudaSetDevice(device_id));
     void* devPtr;
     CUDACHECK(cudaMalloc(&devPtr, alignSize(size + sizeof(void*) + AI_MALLOC_OVERREAD, AI_MALLOC_ALIGN)));
     return devPtr;
 }
 
-static void cudaFastFree(void* devPtr)
+static void cudaFastFree(void* devPtr, size_t device_id)
 {
+    CUDACHECK(cudaSetDevice(device_id));
     if (devPtr)
     {
         CUDACHECK(cudaFree(devPtr));

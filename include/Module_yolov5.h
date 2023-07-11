@@ -16,6 +16,8 @@ public:
 
     void process(const uint8_t* src, int src_height, int src_width, InputDataType inputDataType = InputDataType::IMG_BGR);
 
+    void process_batch(const ImageInfoUint8* imageInfos, int batch_size);
+
     const BoxInfos* get_result();
 
 private:

@@ -95,6 +95,11 @@ void CModule_yolov5_impl::pre_process(const uint8_t *src, int src_height, int sr
     }
 }
 
+void CModule_yolov5_impl::pre_batch_process(const ImageInfoUint8* imageInfos, int batch_size)
+{
+    //pre_batch_process cpu version
+}
+
 void CModule_yolov5_impl::process(const uint8_t* src, int src_height, int src_width, InputDataType inputDataType)
 {
     img_heights_[0] = src_height;
@@ -108,23 +113,59 @@ void CModule_yolov5_impl::process(const uint8_t* src, int src_height, int src_wi
 
 #ifdef AI_ALG_DEBUG
     std::chrono::time_point<std::chrono::system_clock> end_time = std::chrono::system_clock::now();
-    std::printf("Preprocess time %lld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end_time - begin_time).count());
+    std::printf("Preprocess time %ld us\n", std::chrono::duration_cast<std::chrono::microseconds>(end_time - begin_time).count());
 #endif
 
     engine_run();
 
 #ifdef AI_ALG_DEBUG
     std::chrono::time_point<std::chrono::system_clock> end_time_run = std::chrono::system_clock::now();
-    std::printf("Inference time %lld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end_time_run - end_time).count());
+    std::printf("Inference time %ld us\n", std::chrono::duration_cast<std::chrono::microseconds>(end_time_run - end_time).count());
 #endif
 
     post_process();
 
 #ifdef AI_ALG_DEBUG
     std::chrono::time_point<std::chrono::system_clock> end_time_post = std::chrono::system_clock::now();
-    std::printf("Postprocess time %lld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end_time_post - end_time_run).count());
+    std::printf("Postprocess time %ld us\n", std::chrono::duration_cast<std::chrono::microseconds>(end_time_post - end_time_run).count());
 #endif
 }
+
+void CModule_yolov5_impl::process_batch(const ImageInfoUint8* imageInfos, int batch_size)
+{
+    //TODO : check if batch_size == config_.batch_size
+    for (int bs = 0; bs < config_.batch_size; ++bs)
+    {
+        img_heights_[bs] = imageInfos[bs].img_height;
+        img_widths_[bs] = imageInfos[bs].img_width;
+    }
+
+#ifdef AI_ALG_DEBUG
+    std::chrono::time_point<std::chrono::system_clock> begin_time = std::chrono::system_clock::now();
+#endif
+
+    pre_batch_process(imageInfos, batch_size);
+
+#ifdef AI_ALG_DEBUG
+    std::chrono::time_point<std::chrono::system_clock> end_time = std::chrono::system_clock::now();
+    std::printf("Preprocess time %ld us\n", std::chrono::duration_cast<std::chrono::microseconds>(end_time - begin_time).count());
+#endif
+
+    engine_run();
+
+#ifdef AI_ALG_DEBUG
+    std::chrono::time_point<std::chrono::system_clock> end_time_run = std::chrono::system_clock::now();
+    std::printf("Inference time %ld us\n", std::chrono::duration_cast<std::chrono::microseconds>(end_time_run - end_time).count());
+#endif
+
+    post_process();
+
+#ifdef AI_ALG_DEBUG
+    std::chrono::time_point<std::chrono::system_clock> end_time_post = std::chrono::system_clock::now();
+    std::printf("Postprocess time %ld us\n", std::chrono::duration_cast<std::chrono::microseconds>(end_time_post - end_time_run).count());
+#endif
+}
+
 
 void CModule_yolov5_impl::post_process()
 {
@@ -158,5 +199,5 @@ void CModule_yolov5_impl::post_process()
 
 const BoxInfos* CModule_yolov5_impl::get_result()
 {
-    return &boxs_batch_[0];
+    return boxs_batch_.data();
 }

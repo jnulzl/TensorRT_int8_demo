@@ -132,6 +132,18 @@ typedef struct
 	char reserve[8];
 }RectWithID;
 
+template <typename DATATYPE>
+struct _ImageInfo
+{
+    uint8_t* data;
+    int img_height;
+    int img_width;
+    InputDataType img_data_type;
+    char reserve[8];
+};
+typedef _ImageInfo<uint8_t> ImageInfoUint8;
+typedef _ImageInfo<float> ImageInfoFloat32;
+
 #define PI (3.141592653589793)
 
 #endif //AI_ALG_DATA_TYPE_H

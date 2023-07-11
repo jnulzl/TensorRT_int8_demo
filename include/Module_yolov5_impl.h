@@ -16,10 +16,13 @@ public:
 
 	void process(const uint8_t* src, int src_height, int src_width, InputDataType inputDataType = InputDataType::IMG_BGR);
 
+    void process_batch(const ImageInfoUint8* imageInfos, int batch_size);
+
     const BoxInfos* get_result();
 
 protected:
     virtual void pre_process(const uint8_t* src, int src_height, int src_width, InputDataType inputDataType = InputDataType::IMG_BGR);
+    virtual void pre_batch_process(const ImageInfoUint8* imageInfos, int batch_size);
     virtual void post_process();
 
     virtual void engine_init() = 0;

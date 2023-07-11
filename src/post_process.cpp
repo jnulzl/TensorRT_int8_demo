@@ -76,8 +76,8 @@ void nms(BoxInfo* boxes, int* delete_obj_index, int num_box, int num_cls, float 
                 }
                 float xx1 = std::max(boxes[idx].x1, boxes[idy].x1);
                 float yy1 = std::max(boxes[idx].y1, boxes[idy].y1);
-                float xx2 = std::max(boxes[idx].x2, boxes[idy].x2);
-                float yy2 = std::max(boxes[idx].y2, boxes[idy].y2);
+                float xx2 = std::min(boxes[idx].x2, boxes[idy].x2);
+                float yy2 = std::min(boxes[idx].y2, boxes[idy].y2);
                 float w = std::max(0.0f, xx2 - xx1 + 1);
                 float h = std::max(0.0f, yy2 - yy1 + 1);
                 float inter = w * h;

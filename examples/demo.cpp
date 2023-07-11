@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
         }
     }
     std::chrono::time_point<std::chrono::system_clock> begin_time = std::chrono::system_clock::now();
-    long frame_id = 0;    
+    long frame_id = 0;
     while (true)
     {
         cv::Mat frame;

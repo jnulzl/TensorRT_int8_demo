@@ -37,6 +37,8 @@ template <typename T>
 using SampleUniquePtr = std::unique_ptr<T, samplesCommon::InferDeleter>;
 #endif
 
+const static int DEVICE_ID = 0;
+
 std::vector<std::string> split(const std::string& string, char separator, bool ignore_empty)
 {
     std::vector<std::string> pieces;
@@ -135,9 +137,9 @@ void process_color_image(const SampleINT8Params& params, float* preprocess_data)
     size_t src_pixel_num_pre = 0;
     Npp8u *src_ptr_d = nullptr;
     size_t dst_pixel_num = params.imageHeight * params.imageWidth * params.imageChannels;
-    Npp8u *dst_ptr_d = reinterpret_cast<Npp8u*>(cudaFastMalloc(sizeof(Npp8u) * dst_pixel_num));
-    Npp32f *dst_float_ptr_d = reinterpret_cast<Npp32f*>(cudaFastMalloc(sizeof(Npp32f) * dst_pixel_num));
-    Npp32f *dst_chw_float_ptr_d = reinterpret_cast<Npp32f*>(cudaFastMalloc(sizeof(Npp32f) * dst_pixel_num));
+    Npp8u *dst_ptr_d = reinterpret_cast<Npp8u*>(cudaFastMalloc(sizeof(Npp8u) * dst_pixel_num, DEVICE_ID));
+    Npp32f *dst_float_ptr_d = reinterpret_cast<Npp32f*>(cudaFastMalloc(sizeof(Npp32f) * dst_pixel_num, DEVICE_ID));
+    Npp32f *dst_chw_float_ptr_d = reinterpret_cast<Npp32f*>(cudaFastMalloc(sizeof(Npp32f) * dst_pixel_num, DEVICE_ID));
 
     std::ifstream input(params.img_list_file);
     std::string line;
@@ -159,9 +161,9 @@ void process_color_image(const SampleINT8Params& params, float* preprocess_data)
         size_t src_pixel_num = src_height * src_width * src_channels;
         if(src_pixel_num_pre < src_pixel_num)
         {
-            cudaFastFree(src_ptr_d);
+            cudaFastFree(src_ptr_d, DEVICE_ID);
             src_pixel_num_pre = src_pixel_num;
-            src_ptr_d = reinterpret_cast<Npp8u*>(cudaFastMalloc(sizeof(Npp8u) * src_pixel_num_pre));
+            src_ptr_d = reinterpret_cast<Npp8u*>(cudaFastMalloc(sizeof(Npp8u) * src_pixel_num_pre, DEVICE_ID));
         }
         CUDACHECK(cudaMemcpy(src_ptr_d, img.data, sizeof(Npp8u) * src_pixel_num, cudaMemcpyHostToDevice));
 
@@ -308,9 +310,9 @@ void process_gray_image(const SampleINT8Params& params, float* preprocess_data)
     size_t src_pixel_num_pre = 0;
     Npp8u *src_ptr_d = nullptr;
     size_t dst_pixel_num = params.imageHeight * params.imageWidth;
-    Npp8u *dst_ptr_d = reinterpret_cast<Npp8u*>(cudaFastMalloc(sizeof(Npp8u) * dst_pixel_num));
-    Npp32f *dst_float_ptr_d = reinterpret_cast<Npp32f*>(cudaFastMalloc(sizeof(Npp32f) * dst_pixel_num));
-    Npp32f *dst_chw_float_ptr_d = reinterpret_cast<Npp32f*>(cudaFastMalloc(sizeof(Npp32f) * dst_pixel_num));
+    Npp8u *dst_ptr_d = reinterpret_cast<Npp8u*>(cudaFastMalloc(sizeof(Npp8u) * dst_pixel_num, DEVICE_ID));
+    Npp32f *dst_float_ptr_d = reinterpret_cast<Npp32f*>(cudaFastMalloc(sizeof(Npp32f) * dst_pixel_num, DEVICE_ID));
+    Npp32f *dst_chw_float_ptr_d = reinterpret_cast<Npp32f*>(cudaFastMalloc(sizeof(Npp32f) * dst_pixel_num, DEVICE_ID));
 
     std::ifstream input(params.img_list_file);
     std::string line;
@@ -332,9 +334,9 @@ void process_gray_image(const SampleINT8Params& params, float* preprocess_data)
         size_t src_pixel_num = src_height * src_width * src_channels;
         if(src_pixel_num_pre < src_pixel_num)
         {
-            cudaFastFree(src_ptr_d);
+            cudaFastFree(src_ptr_d, DEVICE_ID);
             src_pixel_num_pre = src_pixel_num;
-            src_ptr_d = reinterpret_cast<Npp8u*>(cudaFastMalloc(sizeof(Npp8u) * src_pixel_num_pre));
+            src_ptr_d = reinterpret_cast<Npp8u*>(cudaFastMalloc(sizeof(Npp8u) * src_pixel_num_pre, DEVICE_ID));
         }
         CUDACHECK(cudaMemcpy(src_ptr_d, img.data, sizeof(Npp8u) * src_pixel_num, cudaMemcpyHostToDevice));
 

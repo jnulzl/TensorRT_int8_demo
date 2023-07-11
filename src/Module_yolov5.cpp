@@ -22,6 +22,11 @@ void CModule_yolov5::process(const uint8_t* src, int src_height, int src_width, 
     ANY_POINTER_CAST(impl_, CModule_yolov5_impl)->process(src, src_height, src_width, inputDataType);
 }
 
+void CModule_yolov5::process_batch(const ImageInfoUint8* imageInfos, int batch_size)
+{
+    ANY_POINTER_CAST(impl_, CModule_yolov5_impl)->process_batch(imageInfos, batch_size);
+}
+
 const BoxInfos* CModule_yolov5::get_result()
 {
     return ANY_POINTER_CAST(impl_, CModule_yolov5_impl)->get_result();
